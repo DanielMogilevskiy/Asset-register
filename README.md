@@ -1,4 +1,4 @@
-# Project 3 — Information Asset Register
+# Information Asset Register
 
 ## Overview
 
@@ -109,3 +109,21 @@ Project-3-Asset-Register/
 │
 ├── .gitignore
 └── README.md
+
+GRC Value
+
+The Asset Register provides a foundation for:
+
+Information security risk assessment
+Risk treatment
+GDPR Data Mapping
+Incident Response Planning
+Vendor Risk Assessment
+Business Impact Analysis
+Business Continuity Planning
+
+Methodology Note
+
+The CIA scoring model and criticality thresholds are defined specifically for this demonstration project.
+
+Organizations should define their own assessment criteria according to their business context and risk methodology.
