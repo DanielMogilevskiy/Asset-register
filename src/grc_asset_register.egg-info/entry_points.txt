@@ -1,0 +1,2 @@
+[console_scripts]
+asset-register = asset_register.cli:main

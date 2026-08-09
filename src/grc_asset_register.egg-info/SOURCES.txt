@@ -1,0 +1,12 @@
+LICENSE
+README.md
+setup.py
+src/asset_register/__init__.py
+src/asset_register/cli.py
+src/asset_register/validator.py
+src/grc_asset_register.egg-info/PKG-INFO
+src/grc_asset_register.egg-info/SOURCES.txt
+src/grc_asset_register.egg-info/dependency_links.txt
+src/grc_asset_register.egg-info/entry_points.txt
+src/grc_asset_register.egg-info/top_level.txt
+tests/test_validator.py
