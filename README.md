@@ -53,25 +53,6 @@ This project is designed for:
 
 ---
 
-## 🎯 Key Features
-
-* 📋 Structured information asset inventory
-* 👤 Asset ownership and custodianship
-* 🔐 Confidentiality, Integrity and Availability assessment
-* 📊 Automated CIA scoring
-* 🚨 Automated asset criticality classification
-* 🛡️ Information classification
-* 👥 Personal data identification
-* 🔗 Risk ID mapping
-* ✅ Data quality validation
-* 💻 Command-line interface
-* 🧪 Automated tests
-* 📄 Markdown methodology and policy documentation
-* 📁 CSV input and output
-* 📦 Installable Python package
-
----
-
 ## 📚 Framework Alignment
 
 This project supports the principles of:
@@ -134,67 +115,6 @@ The resulting score ranges from **3 to 15**.
 |     14–15 | Critical    |
 
 These thresholds are part of the project's demonstration methodology and should be adapted to the organisation's own risk methodology and risk appetite.
-
----
-
-## 📦 Asset Categories
-
-The example inventory covers multiple types of assets:
-
-* Information
-* Applications
-* Infrastructure
-* Endpoints
-* Services
-
-Examples include:
-
-* Customer databases
-* CRM platforms
-* Corporate productivity services
-* Production servers
-* Employee records
-* Source-code repositories
-* Firewalls
-* Employee endpoints
-* Backup repositories
-* Financial records
-
----
-
-## 🏗️ Project Structure
-
-```text
-Project-3-Asset-Register/
-│
-├── data/
-│   └── asset_register.csv
-│
-├── docs/
-│   ├── methodology.md
-│   └── asset-management-policy.md
-│
-├── reports/
-│   └── asset_register_report.md
-│
-├── src/
-│   └── asset_register/
-│       ├── __init__.py
-│       ├── cli.py
-│       └── validator.py
-│
-├── output/
-│   └── asset_register_validated.csv
-│
-├── tests/
-│   └── test_validator.py
-│
-├── .gitignore
-├── LICENSE
-├── README.md
-├── requirements.txt
-└── setup.py
-```
 
 ---
 
