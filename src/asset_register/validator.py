@@ -1,200 +1,240 @@
-import csv
-from pathlib import Path
+"""
+GRC validation engine for the Information Asset Register.
+
+This module provides:
+- CIA score calculation
+- Asset criticality determination
+- Asset governance validation
+"""
+
+from typing import Any
 
 
-REQUIRED_FIELDS = [
-    "asset_id",
-    "asset_name",
-    "asset_type",
-    "owner",
-    "custodian",
-    "status",
-    "confidentiality",
-    "integrity",
-    "availability",
-    "information_classification",
-]
+# ---------------------------------------------------------
+# Criticality
+# ---------------------------------------------------------
 
+def determine_criticality(score: int) -> str:
+    """
+    Determine asset criticality based on the CIA score.
 
-VALID_CLASSIFICATIONS = {
-    "Public",
-    "Internal",
-    "Confidential",
-    "Restricted",
-}
+    CIA score range:
+        3-6   -> Low
+        7-10  -> Medium
+        11-13 -> High
+        14-15 -> Critical
+    """
 
-
-VALID_STATUSES = {
-    "Active",
-    "Inactive",
-    "Retired",
-    "Under Review",
-}
-
-
-def calculate_cia_score(
-    confidentiality: int,
-    integrity: int,
-    availability: int,
-) -> int:
-    """Calculate the total CIA score."""
-
-    return (
-        confidentiality
-        + integrity
-        + availability
-    )
-
-
-def determine_criticality(cia_score: int) -> str:
-    """Determine asset criticality from CIA score."""
-
-    if cia_score >= 14:
+    if score >= 14:
         return "Critical"
 
-    if cia_score >= 11:
+    if score >= 11:
         return "High"
 
-    if cia_score >= 7:
+    if score >= 7:
         return "Medium"
 
     return "Low"
 
 
+# ---------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------
+
+def _is_empty(value: Any) -> bool:
+    """Return True when a value is empty or missing."""
+
+    if value is None:
+        return True
+
+    value = str(value).strip()
+
+    return value == "" or value.lower() in {
+        "nan",
+        "none",
+        "null",
+    }
+
+
+def _normalise(value: Any) -> str:
+    """Convert a value to a normalised lowercase string."""
+
+    if _is_empty(value):
+        return ""
+
+    return str(value).strip().lower()
+
+
+def _parse_cia(value: Any) -> int | None:
+    """Convert CIA rating to an integer."""
+
+    try:
+        number = int(value)
+
+        if 1 <= number <= 5:
+            return number
+
+    except (TypeError, ValueError):
+        pass
+
+    return None
+
+
+# ---------------------------------------------------------
+# Asset validation
+# ---------------------------------------------------------
+
 def validate_asset(asset: dict) -> list[str]:
-    """Validate one asset record."""
+    """
+    Validate a single information asset.
 
-    errors = []
+    Returns a list of governance findings.
+    """
 
-    # Check required fields
-    for field in REQUIRED_FIELDS:
-        if not asset.get(field, "").strip():
-            errors.append(
-                f"Missing required field: {field}"
-            )
+    findings = []
 
-    # Validate CIA values
-    for field in [
-        "confidentiality",
-        "integrity",
-        "availability",
-    ]:
-        try:
-            value = int(asset[field])
-
-            if not 1 <= value <= 5:
-                errors.append(
-                    f"{field} must be between 1 and 5"
-                )
-
-        except (ValueError, KeyError):
-            errors.append(
-                f"{field} must contain a number from 1 to 5"
-            )
-
-    # Validate classification
-    if (
-        asset.get("information_classification")
-        not in VALID_CLASSIFICATIONS
-    ):
-        errors.append(
-            "Invalid information classification"
-        )
-
-    # Validate status
-    if asset.get("status") not in VALID_STATUSES:
-        errors.append("Invalid asset status")
-
-    return errors
-
-
-def process_assets(input_file: Path):
-    """Read, validate and enrich the asset register."""
-
-    assets = []
-    validation_errors = []
-
-    with open(
-        input_file,
-        "r",
-        encoding="utf-8",
-    ) as file:
-
-        reader = csv.DictReader(file)
-
-        for asset in reader:
-
-            errors = validate_asset(asset)
-
-            if errors:
-                validation_errors.append(
-                    {
-                        "asset_id": asset.get(
-                            "asset_id",
-                            "UNKNOWN",
-                        ),
-                        "errors": errors,
-                    }
-                )
-
-                continue
-
-            confidentiality = int(
-                asset["confidentiality"]
-            )
-
-            integrity = int(
-                asset["integrity"]
-            )
-
-            availability = int(
-                asset["availability"]
-            )
-
-            cia_score = calculate_cia_score(
-                confidentiality,
-                integrity,
-                availability,
-            )
-
-            asset["cia_score"] = cia_score
-
-            asset["criticality"] = (
-                determine_criticality(cia_score)
-            )
-
-            assets.append(asset)
-
-    return assets, validation_errors
-
-
-def save_results(
-    assets: list[dict],
-    output_file: Path,
-):
-    """Save validated assets to a CSV file."""
-
-    if not assets:
-        return
-
-    output_file.parent.mkdir(
-        parents=True,
-        exist_ok=True,
+    asset_id = asset.get("asset_id")
+    asset_name = asset.get("asset_name")
+    owner = asset.get("owner")
+    custodian = asset.get("custodian")
+    status = asset.get("status")
+    classification = asset.get(
+        "information_classification"
     )
 
-    fieldnames = list(assets[0].keys())
+    confidentiality = _parse_cia(
+        asset.get("confidentiality")
+    )
 
-    with open(
-        output_file,
-        "w",
-        newline="",
-        encoding="utf-8",
-    ) as file:
+    integrity = _parse_cia(
+        asset.get("integrity")
+    )
 
-        writer = csv.DictWriter(
-            file,
-            fieldnames=fieldnames,
+    availability = _parse_cia(
+        asset.get("availability")
+    )
+
+    personal_data = _normalise(
+        asset.get("personal_data")
+    )
+
+    backup_required = _normalise(
+        asset.get("backup_required")
+    )
+
+    review_date = asset.get("review_date")
+
+    # -----------------------------------------------------
+    # Mandatory fields
+    # -----------------------------------------------------
+
+    if _is_empty(asset_id):
+        findings.append(
+            "[CRITICAL] Missing Asset ID"
         )
 
-        writer.writeheader()
-        writer.writerows(assets)
+    if _is_empty(asset_name):
+        findings.append(
+            "[CRITICAL] Missing Asset Name"
+        )
+
+    if _is_empty(owner):
+        findings.append(
+            "[HIGH] Missing Asset Owner"
+        )
+
+    if _is_empty(custodian):
+        findings.append(
+            "[HIGH] Missing Asset Custodian"
+        )
+
+    if _is_empty(status):
+        findings.append(
+            "[MEDIUM] Missing Asset Status"
+        )
+
+    if _is_empty(classification):
+        findings.append(
+            "[HIGH] Missing Information Classification"
+        )
+
+    if _is_empty(review_date):
+        findings.append(
+            "[MEDIUM] Missing Review Date"
+        )
+
+    # -----------------------------------------------------
+    # CIA validation
+    # -----------------------------------------------------
+
+    if confidentiality is None:
+        findings.append(
+            "[HIGH] Invalid Confidentiality rating "
+            "(expected 1-5)"
+        )
+
+    if integrity is None:
+        findings.append(
+            "[HIGH] Invalid Integrity rating "
+            "(expected 1-5)"
+        )
+
+    if availability is None:
+        findings.append(
+            "[HIGH] Invalid Availability rating "
+            "(expected 1-5)"
+        )
+
+    # -----------------------------------------------------
+    # Criticality checks
+    # -----------------------------------------------------
+
+    if (
+        confidentiality is not None
+        and integrity is not None
+        and availability is not None
+    ):
+
+        cia_score = (
+            confidentiality
+            + integrity
+            + availability
+        )
+
+        criticality = determine_criticality(
+            cia_score
+        )
+
+        # Critical assets should have backup
+        if criticality == "Critical":
+
+            if backup_required not in {
+                "yes",
+                "true",
+                "1",
+            }:
+
+                findings.append(
+                    "[CRITICAL] Critical Asset Without Backup"
+                )
+
+            findings.append(
+                "[HIGH] Enhanced Risk Review Required"
+            )
+
+    # -----------------------------------------------------
+    # Privacy governance
+    # -----------------------------------------------------
+
+    if personal_data in {
+        "yes",
+        "true",
+        "1",
+    }:
+
+        findings.append(
+            "[MEDIUM] Privacy Review Required - "
+            "Asset contains Personal Data"
+        )
+
+    return findings
