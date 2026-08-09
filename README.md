@@ -1,5 +1,9 @@
 # GRC Information Asset Register
 
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 A **command-line GRC tool** that helps organisations maintain and assess an inventory of information and associated assets.
 
 The tool validates asset inventory data, calculates Confidentiality, Integrity and Availability (CIA) scores, determines asset criticality, and generates a validated asset register for further risk management activities.
@@ -374,6 +378,34 @@ All data included in this repository is **fictional and created for educational 
 No real customer information, credentials, API keys, passwords or confidential organisational information should be stored in this repository.
 
 ---
+
+## 🌐 Web Interface (Streamlit)
+
+**Try it live:** 👉 [Launch GRC Risk Heatmap Generator](https://danielmogilevskiy-information-asset-register.streamlit.app/)
+
+In addition to the command-line tool, this project includes an **interactive web interface** built with [Streamlit](https://streamlit.io).  
+It provides a more user-friendly way to generate risk heatmaps with visual feedback and real-time customisation.
+
+### Features
+
+- 📂 **Upload CSV** — drag & drop or browse for your risk data
+- 🎨 **Colour palette selection** — choose from multiple schemes (Reds, Blues, Greens, etc.)
+- 🔥 **Real-time heatmap** — instantly see your data visualised
+- 💾 **Download results** — save the heatmap as a high-resolution PNG
+- 🖥️ **Clean, intuitive UI** — perfect for non-technical stakeholders
+
+### How to Run Locally
+
+Make sure you're in the project root and your virtual environment is activated:
+
+```bash
+streamlit run app.py
+```
+Your browser will open automatically at http://localhost:8501.
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://danielmogilevskiy-information-asset-register.streamlit.app/)
+
+![Streamlit Report](screenshots/AssetRegisterExample.png)
 
 ## 🤝 Contributing
 
