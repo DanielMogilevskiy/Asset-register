@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from .validator import (
+from validator import (
     calculate_cia_score,
     determine_criticality,
     validate_asset_findings,
