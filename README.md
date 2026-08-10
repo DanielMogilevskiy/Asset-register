@@ -327,6 +327,11 @@ Your browser will open automatically at http://localhost:8501.
 
 ![Streamlit Report](screenshots/AssetRegisterExample.png)
 
+If the file is a GRC Findings Report, you will have an error:
+
+![Streamlit Report](screenshots/AssetRegisterError.png)
+
+
 ## 🤝 Contributing
 
 Contributions, suggestions and improvements are welcome.
