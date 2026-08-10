@@ -327,7 +327,7 @@ Your browser will open automatically at http://localhost:8501.
 
 ![Streamlit Report](screenshots/AssetRegisterExample.png)
 
-If the file is a GRC Findings Report, you will have an error:
+An error will occur if the file is a GRC Findings Report:
 
 ![Streamlit Report](screenshots/AssetRegisterError.png)
 
