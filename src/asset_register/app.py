@@ -46,25 +46,130 @@ DEFAULT_DATA_PATH = (
 # Helper functions
 # ============================================================
 
-def load_data(uploaded_file=None) -> pd.DataFrame:
+def load_data(uploaded_file=None):
 
     if uploaded_file is not None:
-        return pd.read_csv(uploaded_file)
+        df = pd.read_csv(
+            uploaded_file,
+            encoding="utf-8-sig"
+        )
+
+        return normalize_columns(df)
 
     if not DEFAULT_DATA_PATH.exists():
         return pd.DataFrame()
 
-    return pd.read_csv(DEFAULT_DATA_PATH)
+    df = pd.read_csv(
+        DEFAULT_DATA_PATH,
+        encoding="utf-8-sig"
+    )
+
+    return normalize_columns(df)
 
 
-def validate_columns(df: pd.DataFrame) -> list[str]:
+def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Normalize CSV column names so the application can handle
+    common naming variations.
+    """
 
-    return [
-        column
-        for column in REQUIRED_COLUMNS
-        if column not in df.columns
-    ]
+    df = df.copy()
 
+    # Remove BOM and surrounding whitespace
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.replace("\ufeff", "", regex=False)
+        .str.strip()
+    )
+
+    column_mapping = {
+        # Asset ID
+        "asset_id": "Asset ID",
+        "assetid": "Asset ID",
+        "id": "Asset ID",
+
+        # Asset Name
+        "asset_name": "Asset Name",
+        "assetname": "Asset Name",
+        "name": "Asset Name",
+
+        # Asset Type
+        "asset_type": "Asset Type",
+        "assettype": "Asset Type",
+        "type": "Asset Type",
+
+        # Owner
+        "owner": "Owner",
+        "asset_owner": "Owner",
+
+        # Custodian
+        "custodian": "Custodian",
+        "asset_custodian": "Custodian",
+
+        # Status
+        "status": "Status",
+        "asset_status": "Status",
+
+        # Classification
+        "information_classification":
+            "Information Classification",
+
+        "informationclassification":
+            "Information Classification",
+
+        "information_class":
+            "Information Classification",
+
+        "classification":
+            "Information Classification",
+
+        # CIA
+        "confidentiality": "Confidentiality",
+        "confidentiality_score": "Confidentiality",
+
+        "integrity": "Integrity",
+        "integrity_score": "Integrity",
+
+        "availability": "Availability",
+        "availability_score": "Availability",
+
+        # Additional GRC fields
+        "personal_data": "Personal Data",
+        "personaldata": "Personal Data",
+
+        "backup_required": "Backup Required",
+        "backuprequired": "Backup Required",
+
+        "review_date": "Review Date",
+        "reviewdate": "Review Date",
+
+        "risk_id": "Risk ID",
+        "riskid": "Risk ID",
+    }
+
+    normalized_mapping = {}
+
+    for column in df.columns:
+
+        normalized_key = (
+            column
+            .lower()
+            .strip()
+            .replace(" ", "_")
+            .replace("-", "_")
+        )
+
+        if normalized_key in column_mapping:
+            normalized_mapping[column] = (
+                column_mapping[normalized_key]
+            )
+
+    df = df.rename(
+        columns=normalized_mapping
+    )
+
+    return df
 
 def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -181,7 +286,11 @@ if df.empty:
 # Column validation
 # ============================================================
 
-missing_columns = validate_columns(df)
+missing_columns = [
+    column
+    for column in REQUIRED_COLUMNS
+    if column not in df.columns
+]
 
 if missing_columns:
 
@@ -190,6 +299,14 @@ if missing_columns:
     )
 
     st.write(missing_columns)
+
+    st.info(
+        "Columns detected in uploaded CSV:"
+    )
+
+    st.write(
+        df.columns.tolist()
+    )
 
     st.stop()
 
