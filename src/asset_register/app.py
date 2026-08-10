@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from validator import (
+from .validator import (
     calculate_cia_score,
     determine_criticality,
     validate_asset_findings,
@@ -292,10 +292,65 @@ missing_columns = [
     if column not in df.columns
 ]
 
+
+# Detect uploaded findings report
+findings_report_columns = {
+    "Asset ID",
+    "Severity",
+    "Category",
+    "Code",
+    "Finding",
+    "Recommendation",
+}
+
+
+if findings_report_columns.issubset(
+    set(df.columns)
+):
+
+    st.error(
+        "This file is a GRC Findings Report, "
+        "not an Asset Register."
+    )
+
+    st.warning(
+        "Please upload the original "
+        "`asset_register.csv` file from the "
+        "`data` folder."
+    )
+
+    st.markdown(
+        """
+        ### Correct file structure
+
+        The Asset Register should contain columns such as:
+
+        - Asset ID
+        - Asset Name
+        - Asset Type
+        - Owner
+        - Custodian
+        - Status
+        - Information Classification
+        - Confidentiality
+        - Integrity
+        - Availability
+        """
+    )
+
+    st.stop()
+
+
+# Standard missing-column validation
 if missing_columns:
 
     st.error(
-        "The following required columns are missing:"
+        "The uploaded CSV does not contain "
+        "the required Asset Register columns."
+    )
+
+    st.write(
+        "Missing columns:"
     )
 
     st.write(missing_columns)
