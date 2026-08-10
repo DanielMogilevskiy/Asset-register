@@ -1,28 +1,61 @@
 """
-GRC validation engine for the Information Asset Register.
+Validation engine for the GRC Information Asset Register.
 
-This module provides:
+The module provides:
 - CIA score calculation
 - Asset criticality determination
-- Asset governance validation
+- Mandatory field validation
+- CIA validation
+- Governance checks
+- Privacy checks
+- Risk governance checks
+- Data quality checks
 """
 
 from typing import Any
 
 
-# ---------------------------------------------------------
+# ============================================================
+# Configuration
+# ============================================================
+
+ALLOWED_STATUSES = {
+    "active",
+    "inactive",
+    "under review",
+    "retired",
+}
+
+ALLOWED_CLASSIFICATIONS = {
+    "public",
+    "internal",
+    "confidential",
+    "restricted",
+}
+
+ALLOWED_BOOLEAN_VALUES = {
+    "yes",
+    "no",
+    "true",
+    "false",
+    "1",
+    "0",
+}
+
+
+# ============================================================
 # Criticality
-# ---------------------------------------------------------
+# ============================================================
 
 def determine_criticality(score: int) -> str:
     """
-    Determine asset criticality based on the CIA score.
+    Determine asset criticality from the total CIA score.
 
-    CIA score range:
-        3-6   -> Low
-        7-10  -> Medium
-        11-13 -> High
-        14-15 -> Critical
+    Score:
+        3-6   = Low
+        7-10  = Medium
+        11-13 = High
+        14-15 = Critical
     """
 
     if score >= 14:
@@ -37,9 +70,32 @@ def determine_criticality(score: int) -> str:
     return "Low"
 
 
-# ---------------------------------------------------------
+def calculate_cia_score(
+    confidentiality: Any,
+    integrity: Any,
+    availability: Any,
+) -> int | None:
+    """
+    Calculate the total CIA score.
+
+    Returns None when one or more values are invalid.
+    """
+
+    values = [
+        _parse_cia(confidentiality),
+        _parse_cia(integrity),
+        _parse_cia(availability),
+    ]
+
+    if any(value is None for value in values):
+        return None
+
+    return sum(values)
+
+
+# ============================================================
 # Helper functions
-# ---------------------------------------------------------
+# ============================================================
 
 def _is_empty(value: Any) -> bool:
     """Return True when a value is empty or missing."""
@@ -57,7 +113,7 @@ def _is_empty(value: Any) -> bool:
 
 
 def _normalise(value: Any) -> str:
-    """Convert a value to a normalised lowercase string."""
+    """Return a normalised lowercase string."""
 
     if _is_empty(value):
         return ""
@@ -66,7 +122,7 @@ def _normalise(value: Any) -> str:
 
 
 def _parse_cia(value: Any) -> int | None:
-    """Convert CIA rating to an integer."""
+    """Validate and convert a CIA rating to an integer."""
 
     try:
         number = int(value)
@@ -80,15 +136,38 @@ def _parse_cia(value: Any) -> int | None:
     return None
 
 
-# ---------------------------------------------------------
-# Asset validation
-# ---------------------------------------------------------
+# ============================================================
+# Structured finding
+# ============================================================
 
-def validate_asset(asset: dict) -> list[str]:
+def _finding(
+    asset_id: Any,
+    severity: str,
+    category: str,
+    code: str,
+    message: str,
+    recommendation: str,
+) -> dict:
+
+    return {
+        "Asset ID": str(asset_id) if not _is_empty(asset_id) else "UNKNOWN",
+        "Severity": severity,
+        "Category": category,
+        "Code": code,
+        "Finding": message,
+        "Recommendation": recommendation,
+    }
+
+
+# ============================================================
+# Detailed asset validation
+# ============================================================
+
+def validate_asset_findings(asset: dict) -> list[dict]:
     """
-    Validate a single information asset.
+    Perform detailed GRC validation on a single asset.
 
-    Returns a list of governance findings.
+    Returns structured findings suitable for reporting.
     """
 
     findings = []
@@ -102,6 +181,16 @@ def validate_asset(asset: dict) -> list[str]:
         "information_classification"
     )
 
+    personal_data = _normalise(
+        asset.get("personal_data")
+    )
+
+    backup_required = _normalise(
+        asset.get("backup_required")
+    )
+
+    review_date = asset.get("review_date")
+
     confidentiality = _parse_cia(
         asset.get("confidentiality")
     )
@@ -114,99 +203,197 @@ def validate_asset(asset: dict) -> list[str]:
         asset.get("availability")
     )
 
-    personal_data = _normalise(
-        asset.get("personal_data")
-    )
-
-    backup_required = _normalise(
-        asset.get("backup_required")
-    )
-
-    review_date = asset.get("review_date")
-
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # Mandatory fields
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
     if _is_empty(asset_id):
         findings.append(
-            "[CRITICAL] Missing Asset ID"
+            _finding(
+                asset_id,
+                "Critical",
+                "Data Quality",
+                "DQ-001",
+                "Missing Asset ID",
+                "Assign a unique asset identifier.",
+            )
         )
 
     if _is_empty(asset_name):
         findings.append(
-            "[CRITICAL] Missing Asset Name"
+            _finding(
+                asset_id,
+                "Critical",
+                "Data Quality",
+                "DQ-002",
+                "Missing Asset Name",
+                "Provide a descriptive asset name.",
+            )
         )
 
     if _is_empty(owner):
         findings.append(
-            "[HIGH] Missing Asset Owner"
+            _finding(
+                asset_id,
+                "High",
+                "Data Quality",
+                "DQ-003",
+                "Missing Asset Owner",
+                "Assign a business owner responsible for the asset.",
+            )
         )
 
     if _is_empty(custodian):
         findings.append(
-            "[HIGH] Missing Asset Custodian"
+            _finding(
+                asset_id,
+                "High",
+                "Data Quality",
+                "DQ-004",
+                "Missing Asset Custodian",
+                "Assign a technical or operational custodian.",
+            )
         )
 
     if _is_empty(status):
         findings.append(
-            "[MEDIUM] Missing Asset Status"
+            _finding(
+                asset_id,
+                "Medium",
+                "Data Quality",
+                "DQ-005",
+                "Missing Asset Status",
+                "Define the current lifecycle status.",
+            )
         )
 
     if _is_empty(classification):
         findings.append(
-            "[HIGH] Missing Information Classification"
+            _finding(
+                asset_id,
+                "High",
+                "Data Quality",
+                "DQ-006",
+                "Missing Information Classification",
+                "Assign an approved information classification.",
+            )
         )
 
     if _is_empty(review_date):
         findings.append(
-            "[MEDIUM] Missing Review Date"
+            _finding(
+                asset_id,
+                "Medium",
+                "Data Quality",
+                "DQ-007",
+                "Missing Review Date",
+                "Define the next asset review date.",
+            )
         )
 
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Classification validation
+    # --------------------------------------------------------
+
+    if not _is_empty(classification):
+
+        if _normalise(classification) not in ALLOWED_CLASSIFICATIONS:
+            findings.append(
+                _finding(
+                    asset_id,
+                    "High",
+                    "Data Quality",
+                    "DQ-008",
+                    "Invalid Information Classification",
+                    "Use Public, Internal, Confidential or Restricted.",
+                )
+            )
+
+    # --------------------------------------------------------
+    # Status validation
+    # --------------------------------------------------------
+
+    if not _is_empty(status):
+
+        if _normalise(status) not in ALLOWED_STATUSES:
+            findings.append(
+                _finding(
+                    asset_id,
+                    "Medium",
+                    "Data Quality",
+                    "DQ-009",
+                    "Invalid Asset Status",
+                    "Use an approved lifecycle status.",
+                )
+            )
+
+    # --------------------------------------------------------
     # CIA validation
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
     if confidentiality is None:
         findings.append(
-            "[HIGH] Invalid Confidentiality rating "
-            "(expected 1-5)"
+            _finding(
+                asset_id,
+                "High",
+                "Data Quality",
+                "CIA-001",
+                "Invalid Confidentiality Rating",
+                "Set Confidentiality to a value from 1 to 5.",
+            )
         )
 
     if integrity is None:
         findings.append(
-            "[HIGH] Invalid Integrity rating "
-            "(expected 1-5)"
+            _finding(
+                asset_id,
+                "High",
+                "Data Quality",
+                "CIA-002",
+                "Invalid Integrity Rating",
+                "Set Integrity to a value from 1 to 5.",
+            )
         )
 
     if availability is None:
         findings.append(
-            "[HIGH] Invalid Availability rating "
-            "(expected 1-5)"
+            _finding(
+                asset_id,
+                "High",
+                "Data Quality",
+                "CIA-003",
+                "Invalid Availability Rating",
+                "Set Availability to a value from 1 to 5.",
+            )
         )
 
-    # -----------------------------------------------------
-    # Criticality checks
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # CIA / Criticality governance
+    # --------------------------------------------------------
 
-    if (
-        confidentiality is not None
-        and integrity is not None
-        and availability is not None
-    ):
+    cia_score = calculate_cia_score(
+        confidentiality,
+        integrity,
+        availability,
+    )
 
-        cia_score = (
-            confidentiality
-            + integrity
-            + availability
-        )
+    if cia_score is not None:
 
-        criticality = determine_criticality(
-            cia_score
-        )
+        criticality = determine_criticality(cia_score)
 
-        # Critical assets should have backup
+        # Critical assets require enhanced risk review
         if criticality == "Critical":
+
+            findings.append(
+                _finding(
+                    asset_id,
+                    "High",
+                    "Risk Governance",
+                    "RISK-001",
+                    "Enhanced Risk Review Required",
+                    "Review the asset in the organisational risk register.",
+                )
+            )
 
             if backup_required not in {
                 "yes",
@@ -215,16 +402,19 @@ def validate_asset(asset: dict) -> list[str]:
             }:
 
                 findings.append(
-                    "[CRITICAL] Critical Asset Without Backup"
+                    _finding(
+                        asset_id,
+                        "Critical",
+                        "Business Continuity",
+                        "BC-001",
+                        "Critical Asset Without Backup",
+                        "Define and test an appropriate backup or recovery mechanism.",
+                    )
                 )
 
-            findings.append(
-                "[HIGH] Enhanced Risk Review Required"
-            )
-
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # Privacy governance
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
     if personal_data in {
         "yes",
@@ -233,8 +423,33 @@ def validate_asset(asset: dict) -> list[str]:
     }:
 
         findings.append(
-            "[MEDIUM] Privacy Review Required - "
-            "Asset contains Personal Data"
+            _finding(
+                asset_id,
+                "Medium",
+                "Privacy",
+                "PRIV-001",
+                "Privacy Review Required",
+                "Confirm GDPR processing requirements and data protection controls.",
+            )
         )
 
     return findings
+
+
+# ============================================================
+# Backwards-compatible validation function
+# ============================================================
+
+def validate_asset(asset: dict) -> list[str]:
+    """
+    Backwards-compatible validation function.
+
+    Returns findings as readable strings.
+    """
+
+    findings = validate_asset_findings(asset)
+
+    return [
+        f"[{item['Severity'].upper()}] {item['Finding']}"
+        for item in findings
+    ]
