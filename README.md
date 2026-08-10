@@ -260,26 +260,6 @@ output/asset_register_validated.csv
 
 ---
 
-## 🔗 GRC Workflow
-
-The Asset Register is designed to become a foundation for other GRC activities:
-
-```text
-Asset Identification
-        ↓
-Asset Ownership
-        ↓
-Information Classification
-        ↓
-CIA Assessment
-        ↓
-Asset Criticality
-        ↓
-Risk Mapping
-        ↓
-Risk Treatment
-```
-
 The asset inventory can subsequently support:
 
 * Risk Assessments
@@ -288,14 +268,6 @@ The asset inventory can subsequently support:
 * Vendor Risk Assessment
 * Business Impact Analysis
 * Business Continuity Planning
-
----
-
-## 🔐 Data Protection
-
-All data included in this repository is **fictional and created for educational and demonstration purposes**.
-
-No real customer information, credentials, API keys, passwords or confidential organisational information should be stored in this repository.
 
 ---
 
